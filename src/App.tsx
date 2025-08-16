@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Code, Play, History, BarChart3, Copy, Download, RefreshCw, AlertCircle, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Code, Play, History, BarChart3, Copy, Download, RefreshCw, AlertCircle, CheckCircle, Clock, Trash2, Moon, Sun, Menu, X, Search } from 'lucide-react';
 
 // Types
 interface CodeGenerationRequest {
@@ -36,6 +36,25 @@ interface Stats {
   successRate: number;
   languageUsage: { [key: string]: number };
 }
+
+// Dark Mode Hook
+const useDarkMode = () => {
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  return [darkMode, setDarkMode];
+};
 
 // API Service
 class APIService {
@@ -86,6 +105,80 @@ class APIService {
 
 const apiService = new APIService();
 
+// Mobile Navigation Component
+const MobileNav: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  activeTab: string;
+  onTabChange: (tab: 'generator' | 'history' | 'stats') => void;
+  darkMode: boolean;
+  toggleDarkMode: () => void;
+}> = ({ isOpen, onClose, activeTab, onTabChange, darkMode, toggleDarkMode }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+      <div className="fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform">
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Menu</h2>
+          <button onClick={onClose} className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <nav className="p-4 space-y-2">
+          <button
+            onClick={() => { onTabChange('generator'); onClose(); }}
+            className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === 'generator' 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <Code className="w-5 h-5 inline mr-3" />
+            Generator
+          </button>
+          
+          <button
+            onClick={() => { onTabChange('history'); onClose(); }}
+            className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === 'history' 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <History className="w-5 h-5 inline mr-3" />
+            History
+          </button>
+          
+          <button
+            onClick={() => { onTabChange('stats'); onClose(); }}
+            className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === 'stats' 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <BarChart3 className="w-5 h-5 inline mr-3" />
+            Statistics
+          </button>
+          
+          <div className="border-t dark:border-gray-700 pt-4 mt-4">
+            <button
+              onClick={toggleDarkMode}
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {darkMode ? <Sun className="w-5 h-5 inline mr-3" /> : <Moon className="w-5 h-5 inline mr-3" />}
+              {darkMode ? 'Light Mode' : 'Dark Mode'}
+            </button>
+          </div>
+        </nav>
+      </div>
+    </div>
+  );
+};
+
 // Components
 const CodeGenerationForm: React.FC<{
   onGenerate: (request: CodeGenerationRequest) => void;
@@ -112,22 +205,22 @@ const CodeGenerationForm: React.FC<{
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-        <Code className="mr-2" />
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+        <Code className="mr-2 w-5 h-5 sm:w-6 sm:h-6" />
         Generate Code
       </h2>
       
       <div className="space-y-4">
         <div>
-          <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Programming Language
           </label>
           <select
             id="language"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
             {languages.map(lang => (
               <option key={lang} value={lang}>
@@ -138,7 +231,7 @@ const CodeGenerationForm: React.FC<{
         </div>
         
         <div>
-          <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Code Requirement (max 1000 characters)
           </label>
           <textarea
@@ -149,10 +242,10 @@ const CodeGenerationForm: React.FC<{
             placeholder="Describe what code you want to generate... (Ctrl+Enter to submit)"
             rows={4}
             maxLength={1000}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             required
           />
-          <div className="text-right text-sm text-gray-500 mt-1">
+          <div className="text-right text-sm text-gray-500 dark:text-gray-400 mt-1">
             {prompt.length}/1000 characters
           </div>
         </div>
@@ -160,7 +253,7 @@ const CodeGenerationForm: React.FC<{
         <button
           onClick={handleSubmit}
           disabled={isLoading || !prompt.trim()}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
         >
           {isLoading ? (
             <>
@@ -223,19 +316,19 @@ const CodeDisplay: React.FC<{
   if (!result) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-gray-800 flex items-center">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white flex items-center">
           {result.success ? (
-            <CheckCircle className="text-green-500 mr-2" />
+            <CheckCircle className="text-green-500 mr-2 w-5 h-5" />
           ) : (
-            <AlertCircle className="text-red-500 mr-2" />
+            <AlertCircle className="text-red-500 mr-2 w-5 h-5" />
           )}
           Generated {result.language.charAt(0).toUpperCase() + result.language.slice(1)} Code
         </h3>
         
-        <div className="flex items-center space-x-2">
-          <span className="flex items-center text-sm text-gray-600">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-1" />
             {result.executionTimeMs}ms
           </span>
@@ -243,14 +336,14 @@ const CodeDisplay: React.FC<{
             <>
               <button
                 onClick={copyToClipboard}
-                className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center text-sm"
+                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center text-sm transition-colors"
               >
                 {copied ? <CheckCircle className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
                 {copied ? 'Copied!' : 'Copy'}
               </button>
               <button
                 onClick={downloadCode}
-                className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center text-sm"
+                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center text-sm transition-colors"
               >
                 <Download className="w-4 h-4 mr-1" />
                 Download
@@ -259,7 +352,7 @@ const CodeDisplay: React.FC<{
           )}
           <button
             onClick={onClear}
-            className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center text-sm"
+            className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 flex items-center text-sm transition-colors"
           >
             <Trash2 className="w-4 h-4 mr-1" />
             Clear
@@ -268,17 +361,19 @@ const CodeDisplay: React.FC<{
       </div>
       
       <div className="mb-3">
-        <span className="text-sm font-medium text-gray-600">Prompt: </span>
-        <span className="text-sm text-gray-800">{result.prompt}</span>
+        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Prompt: </span>
+        <span className="text-sm text-gray-800 dark:text-gray-200 break-words">{result.prompt}</span>
       </div>
       
       {result.success ? (
-        <pre className="bg-gray-900 text-green-400 p-4 rounded-md overflow-x-auto text-sm font-mono">
-          <code>{result.generatedCode}</code>
-        </pre>
+        <div className="relative">
+          <pre className="bg-gray-900 dark:bg-gray-950 text-green-400 p-4 rounded-md overflow-x-auto text-xs sm:text-sm font-mono">
+            <code>{result.generatedCode}</code>
+          </pre>
+        </div>
       ) : (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-800">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+          <p className="text-red-800 dark:text-red-300 text-sm">
             <strong>Error:</strong> {result.errorMessage}
           </p>
         </div>
@@ -307,25 +402,28 @@ const HistoryPanel: React.FC<{
   if (!isVisible) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-        <History className="mr-2" />
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-6">
+      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+        <History className="mr-2 w-5 h-5" />
         Generation History
       </h3>
       
       <div className="mb-4">
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Search history..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Search history..."
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            />
+          </div>
           <button
             onClick={handleSearch}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             Search
           </button>
@@ -334,31 +432,32 @@ const HistoryPanel: React.FC<{
       
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {history.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No history found.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">No history found.</p>
         ) : (
           history.map((item) => (
-            <div key={item.id} className="border border-gray-200 rounded-md p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-gray-800">
+            <div key={item.id} className="border border-gray-200 dark:border-gray-700 rounded-md p-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 space-y-1 sm:space-y-0">
+                <span className="font-medium text-gray-800 dark:text-white">
                   {item.programmingLanguage.charAt(0).toUpperCase() + item.programmingLanguage.slice(1)}
                 </span>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                   {item.success ? (
                     <CheckCircle className="w-4 h-4 text-green-500" />
                   ) : (
                     <AlertCircle className="w-4 h-4 text-red-500" />
                   )}
-                  <span>{new Date(item.createdAt).toLocaleString()}</span>
+                  <span className="hidden sm:inline">{new Date(item.createdAt).toLocaleString()}</span>
+                  <span className="sm:hidden">{new Date(item.createdAt).toLocaleDateString()}</span>
                   <span>{item.executionTimeMs}ms</span>
                 </div>
               </div>
-              <p className="text-sm text-gray-700 mb-2">{item.userPrompt}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 break-words">{item.userPrompt}</p>
               {item.success ? (
-                <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto max-h-32">
-                  <code>{item.generatedCode.substring(0, 200)}...</code>
+                <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded text-xs overflow-x-auto max-h-32">
+                  <code className="text-gray-800 dark:text-gray-200">{item.generatedCode.substring(0, 200)}...</code>
                 </pre>
               ) : (
-                <p className="text-red-600 text-sm">{item.errorMessage}</p>
+                <p className="text-red-600 dark:text-red-400 text-sm break-words">{item.errorMessage}</p>
               )}
             </div>
           ))
@@ -372,46 +471,46 @@ const StatsPanel: React.FC<{ stats: Stats | null; isVisible: boolean }> = ({ sta
   if (!isVisible || !stats) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-        <BarChart3 className="mr-2" />
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-6">
+      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+        <BarChart3 className="mr-2 w-5 h-5" />
         Statistics
       </h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="text-lg font-semibold text-blue-800">Total</h4>
-          <p className="text-2xl font-bold text-blue-600">{stats.totalGenerations}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg">
+          <h4 className="text-sm sm:text-lg font-semibold text-blue-800 dark:text-blue-300">Total</h4>
+          <p className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalGenerations}</p>
         </div>
         
-        <div className="bg-green-50 p-4 rounded-lg">
-          <h4 className="text-lg font-semibold text-green-800">Successful</h4>
-          <p className="text-2xl font-bold text-green-600">{stats.successfulGenerations}</p>
+        <div className="bg-green-50 dark:bg-green-900/20 p-3 sm:p-4 rounded-lg">
+          <h4 className="text-sm sm:text-lg font-semibold text-green-800 dark:text-green-300">Successful</h4>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{stats.successfulGenerations}</p>
         </div>
         
-        <div className="bg-red-50 p-4 rounded-lg">
-          <h4 className="text-lg font-semibold text-red-800">Failed</h4>
-          <p className="text-2xl font-bold text-red-600">{stats.failedGenerations}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 p-3 sm:p-4 rounded-lg">
+          <h4 className="text-sm sm:text-lg font-semibold text-red-800 dark:text-red-300">Failed</h4>
+          <p className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">{stats.failedGenerations}</p>
         </div>
         
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <h4 className="text-lg font-semibold text-purple-800">Success Rate</h4>
-          <p className="text-2xl font-bold text-purple-600">{stats.successRate.toFixed(1)}%</p>
+        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 sm:p-4 rounded-lg">
+          <h4 className="text-sm sm:text-lg font-semibold text-purple-800 dark:text-purple-300">Success Rate</h4>
+          <p className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.successRate.toFixed(1)}%</p>
         </div>
       </div>
       
       <div className="mb-4">
-        <h4 className="text-lg font-semibold text-gray-800 mb-2">Average Execution Time</h4>
-        <p className="text-xl text-gray-600">{stats.averageExecutionTimeMs.toFixed(0)}ms</p>
+        <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-2">Average Execution Time</h4>
+        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300">{stats.averageExecutionTimeMs.toFixed(0)}ms</p>
       </div>
       
       <div>
-        <h4 className="text-lg font-semibold text-gray-800 mb-2">Language Usage</h4>
+        <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-2">Language Usage</h4>
         <div className="space-y-2">
           {Object.entries(stats.languageUsage).map(([language, count]) => (
-            <div key={language} className="flex justify-between items-center">
-              <span className="capitalize">{language}</span>
-              <span className="font-medium">{count}</span>
+            <div key={language} className="flex justify-between items-center text-sm sm:text-base">
+              <span className="capitalize text-gray-700 dark:text-gray-300">{language}</span>
+              <span className="font-medium text-gray-900 dark:text-white">{count}</span>
             </div>
           ))}
         </div>
@@ -428,6 +527,8 @@ const AICodeGenerator: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'generator' | 'history' | 'stats'>('generator');
+  const [darkMode, setDarkMode] = useDarkMode();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleGenerate = async (request: CodeGenerationRequest) => {
     setIsLoading(true);
@@ -466,7 +567,6 @@ const AICodeGenerator: React.FC = () => {
       setHistory(historyData);
     } catch (err) {
       console.error('Failed to load history:', err);
-      // Don't set error state for background data loading
     }
   };
 
@@ -476,33 +576,34 @@ const AICodeGenerator: React.FC = () => {
       setStats(statsData);
     } catch (err) {
       console.error('Failed to load statistics:', err);
-      // Don't set error state for background data loading
     }
   };
 
   // Load initial data
-  React.useEffect(() => {
+  useEffect(() => {
     loadHistory();
     loadStats();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
+      <header className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Code className="mr-3 text-blue-600" />
-              AI Code Generator
+          <div className="flex justify-between items-center py-4 sm:py-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+              <Code className="mr-2 sm:mr-3 text-blue-600 dark:text-blue-400 w-6 h-6 sm:w-8 sm:h-8" />
+              <span className="hidden sm:inline">AI Code Generator</span>
+              <span className="sm:hidden">AI CodeGen</span>
             </h1>
             
-            <nav className="flex space-x-4">
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-4">
               <button
                 onClick={() => setActiveTab('generator')}
                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
                   activeTab === 'generator' 
                     ? 'bg-blue-600 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 Generator
@@ -512,7 +613,7 @@ const AICodeGenerator: React.FC = () => {
                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
                   activeTab === 'history' 
                     ? 'bg-blue-600 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 History
@@ -522,25 +623,57 @@ const AICodeGenerator: React.FC = () => {
                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
                   activeTab === 'stats' 
                     ? 'bg-blue-600 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 Statistics
               </button>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
             </nav>
+
+            {/* Mobile Controls */}
+            <div className="flex items-center space-x-2 lg:hidden">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Mobile Navigation */}
+      <MobileNav
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        darkMode={darkMode}
+        toggleDarkMode={() => setDarkMode(!darkMode)}
+      />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4 mb-6">
             <div className="flex">
               <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
-              <p className="text-red-800 flex-1">{error}</p>
+              <p className="text-red-800 dark:text-red-300 flex-1 text-sm sm:text-base break-words">{error}</p>
               <button
                 onClick={() => setError(null)}
-                className="ml-2 text-red-600 hover:text-red-800 font-bold text-lg leading-none"
+                className="ml-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 font-bold text-lg leading-none"
               >
                 ×
               </button>
